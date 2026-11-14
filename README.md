@@ -289,3 +289,19 @@ git status
 ```
 
 위 명령어는 실제로 실행하여 검증한 후 완료로 표시한다.
+
+### 파일 권한 검증
+
+실행 명령어:
+
+docker exec my-web ls -l /usr/share/nginx/html/
+
+실행 결과:
+
+- 50x.html: rw-r--r--
+- index.html: rwxr-xr-x
+- 소유자: root
+- 그룹: root
+
+Docker 컨테이너 내부의 파일 소유자와
+접근 권한을 확인하였다.
