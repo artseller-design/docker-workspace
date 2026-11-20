@@ -53,6 +53,7 @@ Docker 클라이언트만 보이던 시점에는 서버 연결이 실패했고, 
 - [x] 포트 `8080:80` 연결 확인
 - [x] Nginx 접근 로그 HTTP 200 확인
 - [x] Docker 볼륨 생성과 컨테이너 간 데이터 유지 확인
+- [x] 파일 생성·이동·삭제 명령 실행 및 터미널 캡처 추가
 - [x] 장애 발생/원인 확인/조치/재검증 문서화
 - [x] Git 저장소 초기화 및 첫 커밋
 - [ ] 호스트·컨테이너 파일 권한 실습 결과 추가 검증
@@ -163,6 +164,50 @@ Docker-volume-test
 
 ![볼륨 데이터 유지 검증](evidence/volume-test.png)
 
+### 5.4 파일 생성·이동·삭제 출력 (호스트 PowerShell)
+
+PowerShell에서 증빙 폴더에 임시 파일을 만들고 이름을 바꾼 뒤 삭제했다. 기존 파일을 덮어쓰지 않도록 두 경로가 비어 있는지 먼저 확인했다.
+
+```powershell
+$source = 'C:\Users\ADMIN\docker-workspace\evidence\.file-operation-proof.tmp'
+$destination = 'C:\Users\ADMIN\docker-workspace\evidence\.file-operation-proof-moved.tmp'
+if ((Test-Path $source) -or (Test-Path $destination)) {
+    throw 'A demo path already exists; refusing to overwrite it.'
+}
+New-Item -ItemType File -Path $source -Value 'temporary proof' | Select-Object Name, Length
+Move-Item -LiteralPath $source -Destination $destination -PassThru | Select-Object Name, Length
+Remove-Item -LiteralPath $destination
+```
+
+실행 출력:
+
+```text
+Name                            Length
+----                            ------
+.file-operation-proof.tmp           15
+.file-operation-proof-moved.tmp     15
+```
+
+삭제 후 존재 여부를 별도 명령으로 확인했다.
+
+```powershell
+$source = 'C:\Users\ADMIN\docker-workspace\evidence\.file-operation-proof.tmp'
+$destination = 'C:\Users\ADMIN\docker-workspace\evidence\.file-operation-proof-moved.tmp'
+Write-Output "Source exists: $(Test-Path -LiteralPath $source)"
+Write-Output "Destination exists: $(Test-Path -LiteralPath $destination)"
+```
+
+실행 출력:
+
+```text
+Source exists: False
+Destination exists: False
+```
+
+임시 파일은 작업 후 모두 삭제되어 저장소에 남아 있지 않다. 아래 캡처에서 생성·이동·삭제 출력과 삭제 후 두 경로가 모두 `False`인 것을 확인할 수 있다. 이 작업은 호스트 파일 작업이며 Docker 볼륨 내부의 파일 이동·삭제를 증명하지는 않는다. 볼륨 생성·목록 확인 및 볼륨 데이터 읽기 결과는 기존 `evidence/volume-test.png`를 참고한다.
+
+![PowerShell 파일 생성·이동·삭제 출력](evidence/file-operations.png)
+
 ## 6. 트러블슈팅
 
 ### 6.1 사례 1 — Docker 엔진 연결 실패
@@ -250,7 +295,7 @@ git status
 
 ## 8. 실행 결과 및 증빙자료 모음
 
-아래 링크는 실제 증빙 이미지로 연결되며, 검증 과정의 각 절에서도 이미지가 직접 표시된다.
+아래 링크는 확보된 실제 증빙 이미지로 연결된다.
 
 | 증빙자료 | 확인 내용 | 사진 |
 |---|---|---|
@@ -261,6 +306,7 @@ git status
 | 웹 서버 접속 | `localhost:8080` 페이지 출력 | [웹페이지 화면](evidence/web-success.png) |
 | 컨테이너 로그 | HTTP 응답 코드 200 | [로그 화면](evidence/docker-logs.png) |
 | 볼륨 데이터 유지 | `Docker-volume-test` 출력 | [볼륨 화면](evidence/volume-test.png) |
+| 파일 생성·이동·삭제 | 생성·이동·삭제 및 경로 부재 확인 | [PowerShell 캡처](evidence/file-operations.png) |
 | Git 최초 커밋 | 커밋 `a841331` 생성 | [커밋 화면](evidence/git-commit.png) |
 | favicon 오류 | HTTP 404 및 `favicon.ico` 누락 | [오류 화면](evidence/favicon-error.png) |
 | favicon 수정 후 | 새 컨테이너의 HTTP 200 응답 | [수정 후 화면](evidence/favicon-fixed.png) |
